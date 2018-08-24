@@ -1,0 +1,561 @@
+ <!-- Open in Chrome -->
+ <!DOCTYPE html>
+ <html>
+	<head>
+		<title>Felipes Test</title>
+
+	    <script src="https://xyz.api.here.com/maps/latest/xyz-maps-common.min.js" type="text/javascript" charset="UTF-8" ></script>
+	    <script src="https://xyz.api.here.com/maps/latest/xyz-maps-core.min.js" type="text/javascript" charset="UTF-8" ></script>
+	    <script src="https://xyz.api.here.com/maps/latest/xyz-maps-display.min.js" type="text/javascript" charset="UTF-8" ></script>
+	    <script src="https://xyz.api.here.com/maps/latest/xyz-maps-plugins.min.js" type="text/javascript" charset="UTF-8" ></script>
+
+ 		<style type="text/css">
+			#map {
+				position: absolute;
+            	overflow: hidden;
+				top: 0;
+				left: 0;
+				width: 100%;
+                height: 100%;
+				z-index: -1;
+			}
+			
+			body {
+				padding: 26px 10px;
+			}
+		
+			.button {
+				position: relative;
+				right: 0;
+				top: 0;
+				padding: 8px;
+				border-radius: 9px;
+				width: 170px;
+				text-align: center;
+				font-weight: bold;
+				font-family: sans-serif;
+				float: left;
+				margin-right: 20px;
+				cursor: pointer;
+			}
+			
+			.button:hover{
+				opacity: .8;
+			}
+			
+			#logistics {				
+				background-color: rgba(0, 0, 0, .6);
+				color: #fff;				
+				border: 1px solid #fff;
+			}
+			
+			#earthquake {				
+				background-color: rgba(255, 0, 0, 0.6);
+				color: #fff;	
+				border: 1px solid #fff;
+			}
+			#floods {
+				background-color: rgba(0, 68, 247, .6);
+				color: #fff;				
+				border: 1px solid #fff;
+			}
+			
+			.properties {
+				position:relative;
+				top:0;			
+			}
+			
+			.controls {
+				overflow: hidden;
+				margin-bottom: 20px;
+			}
+			
+			.panel {
+				width: 650px;
+				float: left;
+			}
+			
+			#info {
+				background: #272d37;
+				color: #fff;
+				max-height: 380px;
+				overflow-y: scroll;
+				padding: 20px 5px;
+			}
+			
+			#legend {
+				position: absolute;
+				bottom: 0;
+				left: 0;
+				background-color: rgba(0, 0, 0, .6);
+				color: #fff;				
+				border: 1px solid #fff;
+				margin: 20px 5px;
+				text-align: center;
+				font-weight: bold;
+				font-family: sans-serif;
+				width: auto;
+			}
+ 		</style>
+	</head>
+	<body>
+		<div id="map"></div>
+
+		
+		<div class="panel">
+			<div class="controls"> 
+				<div id="logistics" class="button">Logistics mode</div>
+				<div id="earthquake" class="button">Earthquake mode</div>
+				<div id="floods" class="button">Flood mode</div>
+			</div>
+			
+			<div id="info" class="properties">No feature is clicked!</div>
+		</div>
+		<div id="legend" class="">Legend</div>
+
+		<script type="application/javascript">
+			//specify your credentials for image and link layers
+	      	var YOUR_ACCESS_TOKEN = window.parent.YOUR_ACCESS_TOKEN;
+			var infoTag = document.querySelector("#info");
+			
+        // add layers to display
+        var layers = [
+            new here.xyz.maps.layers.MVTLayer({
+                name   : 'mvt-world-layer',
+                remote : {
+                    url : 'https://xyz.api.here.com/tiles/osmbase/256/all/{z}/{x}/{y}.mvt'
+                    // optional settings:
+                    // max  : 16,     // max level for loading data
+                    // min  : 1       // min level for loading data
+                    // tileSize : 512 // 512|256 defines mvt tilesize in case it can't be automatically detected in url..
+                },
+                min : 1,
+                max : 20,
+
+                style : {
+
+                    backgroundColor: '#555555',
+
+                    strokeWidthZoomScale: function (level) {
+                        return level > 17 ? 1 : level > 14 ? .5 : .25
+                    },
+
+                    styleGroups: {
+
+                        'earth'        : [{ zIndex: 1, type: 'Polygon', fill: '#555555' }],
+                        'water'        : [{ zIndex: 2, type: 'Polygon',opacity:0.3, fill: '#7ffcfc' }],
+                        'landuse'      : [{ zIndex: 3, type: 'Polygon', fill: '#666666' }],
+                        'roads'        : [{ zIndex: 4, type: 'Line',  stroke: '#ffffff', strokeWidth: 4 }],
+                        'roadshighway' : [{ zIndex: 5, type: 'Line',  stroke: '#ffffff', strokeWidth: 6 }],
+                        'buildings'    : [{ zIndex: 7, type: 'Polygon', fill: '#999999' }]
+                    },
+
+                    assign: function (feature, level)
+                    {
+                        var props = feature.properties;
+                        var kind  = props.kind;
+                        var layer = props.layer; // the data layer of the feature
+                        var geom  = feature.geometry.type;
+
+                        if (layer == 'water') {
+                            if (geom == 'LineString' || geom == 'MultiLineString') {
+                                return;
+                            }
+                        }
+                        if (layer == 'roads') {
+                            if (kind == 'rail' || kind == 'ferry') {
+                                return;
+                            }
+                            if (kind == 'highway') {
+                                return layer + kind;
+                            }
+                        }
+                        return layer;
+                    }
+                }
+            })
+        ];
+		window.display = new  here.xyz.maps.Map( document.getElementById("map"), {
+        zoomLevel : 4,
+        center: {
+            longitude: -96.76883, latitude: 39.6104
+		},
+		layers: layers});
+//Layer Style Setter
+function setEarthquakeRadius(feature, zoomlevel) {
+	return Math.floor(feature.properties.mag)*2;
+}
+
+function setVolColor(feature, zoomlevel) { //set color of volcanoe
+	if (feature.properties.TYPE == "Active" || feature.properties.TYPE == "Potentially active") {
+		return "#ff0000";
+	}
+	else {
+		return "#000000";
+	}
+}
+
+//Layer Definition
+var floodRiskAreas = new here.xyz.maps.layers.TileLayer({
+	name: 'Flood Risk Areas',
+    min: 4,
+    max: 20,
+
+    // Define provider for this layer
+    provider: new here.xyz.maps.providers.SpaceProvider ({
+    	// Name of the provider
+		name:  'SpaceProvider',
+
+		// Zoom level at which tiles are cached
+		level: 4,
+
+		// Space name
+		space: '6wgAHK01',
+
+		// User credential of the provider
+		credentials: {
+            access_token: 'SmWO0Bq3sCxLjBrQ_l8aGQ'
+		}
+			}),
+
+    // customize layer style
+    style:{
+    	styleGroups: {
+    		linkStyle: [
+				{zIndex:0, type:"Polygon", opacity:0.3, fill:"#ff0450"},
+				]
+    	},
+
+		assign: function(feature, zoomlevel){
+         	return "linkStyle";
+		}
+    }
+
+})
+
+var earthquakes = new here.xyz.maps.layers.TileLayer({
+	// Name of the layer
+	name: 'Significant Earthquakes Last 7 Days',
+
+	// Minimum zoom level
+    min: 4,
+
+    // Maximum zoom level
+    max: 20,
+
+    // Define provider for this layer
+    provider: new here.xyz.maps.providers.SpaceProvider ({
+    	// Name of the provider
+		name:  'SpaceProvider',
+
+		// Zoom level at which tiles are cached
+		level: 4,
+
+		// Space name
+		space: 'AZNDhUcf',
+
+		// User credential of the provider
+		credentials: {
+            access_token: 'SmWO0Bq3sCxLjBrQ_l8aGQ'
+		}
+			}),
+
+    // customize layer style
+    style:{
+    	styleGroups: {
+    		linkStyle: [
+				{zIndex:1, type:"Circle",radius:setEarthquakeRadius, opacity:0.5, fill:"#ff0450"},
+				{zIndex:2, type:"Text", textRef:"properties.mag", fill:"#3D272B"}
+				]
+    	},
+
+		assign: function(feature, zoomlevel){
+         	return "linkStyle";
+		}
+    }
+
+})
+
+var volcanoes = new here.xyz.maps.layers.TileLayer({
+	// Name of the layer
+	name: 'Global Volcanoes',
+    min: 4,
+    max: 20,
+    provider: new here.xyz.maps.providers.SpaceProvider ({
+    	// Name of the provider
+		name:  'SpaceProvider',
+
+		// Zoom level at which tiles are cached
+		level: 4,
+
+		// Space name
+		space: 'Tl09MpZ6',
+
+		// User credential of the provider
+		credentials: {
+            access_token: 'SmWO0Bq3sCxLjBrQ_l8aGQ'
+		}
+			}),
+
+    // customize layer style
+    style:{
+    	styleGroups: {
+    		linkStyle: [
+				{zIndex:1, type:"Circle",radius:4, opacity:1.0,fill:setVolColor}
+				]
+    	},
+
+		assign: function(feature, zoomlevel) {
+         	return "linkStyle";
+		}
+    }
+
+})
+
+var dams = new here.xyz.maps.layers.TileLayer({
+	name: 'Dams and Water Reservoirs',
+    min: 4,
+    max: 20,
+
+    // Define provider for this layer
+    provider: new here.xyz.maps.providers.SpaceProvider ({
+    	// Name of the provider
+		name:  'SpaceProvider',
+
+		// Zoom level at which tiles are cached
+		level: 4,
+
+		// Space name
+		space: 'zv4IZzoR',
+
+		// User credential of the provider
+		credentials: {
+            access_token: 'SmWO0Bq3sCxLjBrQ_l8aGQ'
+		}
+			}),
+
+    // customize layer style
+    style:{
+    	styleGroups: {
+    		linkStyle: [
+				{zIndex:1, type:"Circle",radius:2, opacity:0.8, fill:"#042aff"},
+				//{zIndex:2, type:"Text", textRef:"", fill:"#3D272B"}
+				]
+    	},
+
+		assign: function(feature, zoomlevel){
+         	return "linkStyle";
+		}
+    }
+
+})
+
+//logistics
+var airports = new here.xyz.maps.layers.TileLayer({
+	name: 'Global Airports',
+    min: 8,
+    max: 20,
+    provider: new here.xyz.maps.providers.SpaceProvider ({
+    	// Name of the provider
+		name:  'SpaceProvider',
+
+		// Zoom level at which tiles are cached
+		level: 4,
+
+		// Space name
+		space: 'Q2oST25X',
+		credentials: {
+            access_token: 'SmWO0Bq3sCxLjBrQ_l8aGQ'
+		}
+			}),
+	style:{
+      styleGroups: {
+        linkStyle: [{
+          type: "Image",
+          zIndex: 0,
+		  width: 10,
+		  fill: "#fffff",
+          src: "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHZlcnNpb249IjEuMSIgaWQ9Imx1aS1pY29uLWFpcnBvcnQtb25kYXJrLXNvbGlkLW1lZGl1bSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayIgeD0iMHB4IiB5PSIwcHgiIHZpZXdCb3g9IjAgMCAyOCAyOCIgZW5hYmxlLWJhY2tncm91bmQ9Im5ldyAwIDAgMjggMjgiIHhtbDpzcGFjZT0icHJlc2VydmUiPjxnIGlkPSJsdWktaWNvbi1haXJwb3J0LW9uZGFyay1zb2xpZC1tZWRpdW0tZ3JvdXAiPjxnIGlkPSJsdWktaWNvbi1haXJwb3J0LW9uZGFyay1zb2xpZC1tZWRpdW0tYm91bmRpbmctYm94IiBvcGFjaXR5PSIwIj48cGF0aCBmaWxsPSIjRkZGRkZGIiBkPSJNMjcsMXYyNkgxVjFIMjcgTTI4LDBIMHYyOGgyOFYwTDI4LDB6Ii8+PC9nPjxwYXRoIGZpbGw9IiNGRkZGRkYiIGQ9Ik0yNS43NDAyLDIuMzA1MmMwLDAtMS4xMzgyLTEuMTM4NS00LjE4NTUsMS42NzdjLTIuNjczNiwyLjMwNjQtMy41NzM3LDMuMTgwNC0zLjU3MzcsMy4xODA0QzE1LjM3MDYsNy4xNjgyLDUuMzI3Niw2LjgxMTUsNC4zNjM4LDcuMjAwOUMzLjgwMzUsNy40MjcyLDEuOTY4LDkuMjUzOCwxLjk2OCw5LjI1MzhsMTEuMjE4NSwzLjA3OTJsLTQuOTQyMSw1LjYxMjhsLTQuNTIxNS0wLjk4MDdsMy42Nzg1LDMuNjc5bDMuNjc5LDMuNjc4NWwtMC45ODA3LTQuNTIxNWw1LjYxMjgtNC45NDJsMy4wNzkzLDExLjIxODVjMCwwLDEuODI2NC0xLjgzNTYsMi4wNTI3LTIuMzk1OWMwLjM4OTQtMC45NjM5LDAuMDMyNy0xMS4wMDY3LDAuMDM4My0xMy42MTcyYzAsMCwwLjg3NC0wLjkwMDEsMy4xODA0LTMuNTczN0MyNi44Nzg5LDMuNDQzNCwyNS43NDAyLDIuMzA1MiwyNS43NDAyLDIuMzA1MnoiLz48L2c+PC9zdmc+"}]
+	  },
+      assign: ()=>"linkStyle"
+    }
+})
+
+var hospitals = new here.xyz.maps.layers.TileLayer({
+	name: 'Global Medical Support',
+    min: 8,
+    max: 20,
+    provider: new here.xyz.maps.providers.SpaceProvider ({
+		name:  'SpaceProvider',
+		level: 4,
+		space: 'ZdeMnl52',
+
+		// User credential of the provider
+		credentials: {
+            access_token: 'SmWO0Bq3sCxLjBrQ_l8aGQ'
+		}
+			}),
+
+    // customize layer style
+    style:{
+    	styleGroups: {
+    		linkStyle: [
+				{zIndex:1, 
+				type:"Image",
+				width: 10,
+				src: "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHZlcnNpb249IjEuMSIgaWQ9Imx1aS1pY29uLWhvc3BpdGFsLW9uZGFyay1zb2xpZC1tZWRpdW0iIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB2aWV3Qm94PSIwIDAgMjggMjgiIGVuYWJsZS1iYWNrZ3JvdW5kPSJuZXcgMCAwIDI4IDI4IiB4bWw6c3BhY2U9InByZXNlcnZlIj48Zz48ZyBpZD0ibHVpLWljb24taG9zcGl0YWwtb25kYXJrLXNvbGlkLW1lZGl1bS1ib3VuZGluZy1ib3giIG9wYWNpdHk9IjAiPjxwYXRoIGZpbGw9IiM2ODY4NjgiIGQ9Ik0yNywxdjI2SDFWMUgyNyBNMjgsMEgwdjI4aDI4VjBMMjgsMHoiLz48L2c+PHBhdGggZmlsbD0iI0ZGRkZGRiIgZD0iTTIzLjgzMjcsMS4yMjI3aC0xOS44NGMtMS42MSwwLTIuOTEsMS4zLTIuOTEsMi45MXYxOS44NGMwLDEuNjEwMSwxLjMsMi45MSwyLjkxLDIuOTFoMTkuODRjMS42MSwwLDIuOTEtMS4yOTk5LDIuOTEtMi45MXYtMTkuODRDMjYuNzQyNywyLjUyMjcsMjUuNDQyNywxLjIyMjcsMjMuODMyNywxLjIyMjd6IE0yMS45OTI3LDE2LjMwMjhoLTUuODN2NS44M2gtMy45MnYtNS44M2gtNS44M3YtMy45Mmg1Ljgzdi01LjgzaDMuOTJ2NS44M2g1LjgzVjE2LjMwMjh6Ii8+PC9nPjwvc3ZnPg==",
+				fill:"#ffffff"
+				},
+				]
+    	},
+
+		assign: function(feature, zoomlevel){
+         	return "linkStyle";
+		}
+    }
+
+})
+
+var ports = new here.xyz.maps.layers.TileLayer({
+	name: 'Global Ports',
+    min: 4,
+    max: 20,
+
+    // Define provider for this layer
+    provider: new here.xyz.maps.providers.SpaceProvider ({
+    	// Name of the provider
+		name:  'SpaceProvider',
+		level: 4,
+		space: 'VxSo4ZZY',
+
+		// User credential of the provider
+		credentials: {
+            access_token: 'SmWO0Bq3sCxLjBrQ_l8aGQ'
+		}
+			}),
+
+    // customize layer style
+    style:{
+    	styleGroups: {
+    		linkStyle: [
+				{zIndex:2, type:"Circle",radius:3, opacity:1.0, fill:"#00fffb"},
+				]
+    	},
+
+		assign: function(feature, zoomlevel){
+         	return "linkStyle";
+		}
+    }
+
+})
+
+//Logistics Mode on off
+var logisticsAdded = false;
+document.querySelector("#logistics").onclick = function(){
+
+	if(!logisticsAdded){
+		display.addLayer(ports);
+		display.addLayer(airports);
+		display.addLayer(hospitals);
+
+		this.innerText="End logistics mode";
+		updateLegend();
+		logisticsAdded = true;
+	}
+	else{
+		display.removeLayer(ports);
+		display.removeLayer(airports);
+		display.removeLayer(hospitals);
+
+		this.innerText="Logistics mode";
+		updateLegend();
+		logisticsAdded = false;
+	}
+};
+
+//Earthquake Mode on off
+var earthquakeAdded = false;
+document.querySelector("#earthquake").onclick = function(){
+
+	if(!earthquakeAdded){
+		display.addLayer(dams);
+		display.addLayer(earthquakes);
+		display.addLayer(volcanoes);
+
+		this.innerText="End earthquake mode";
+		updateLegend();
+		earthquakeAdded = true;
+	}
+	else{
+		display.removeLayer(dams);
+		display.removeLayer(earthquakes);
+		display.removeLayer(volcanoes);
+
+		this.innerText="Earthquake mode";
+		updateLegend();
+		earthquakeAdded = false;
+	}
+};
+
+//Flood Mode on off
+var floodAdded = false;
+document.querySelector("#floods").onclick = function(){
+
+	if(!floodAdded){
+		display.addLayer(floodRiskAreas);
+
+		this.innerText="End flood mode";
+		updateLegend();
+		floodAdded = true;
+	}
+	else{
+		display.removeLayer(floodRiskAreas);
+
+		this.innerText="Flood mode";
+		updateLegend();
+		floodAdded = false;
+	}
+};
+
+// Add a event listener to pointerup
+function eventHandler(evt){
+	// Click on a feature
+	if(evt.target){
+		var properties = evt.target.properties;
+		
+		var bbox = evt.target.bbox;
+		display.setCenter((bbox[0]+bbox[2])/2, (bbox[1]+bbox[3])/2);
+		
+		
+		// Display feature user properties
+		infoTag.innerText = JSON.stringify(properties, undefined, 4);
+	}
+	// Feature is not clicked
+	else{
+		infoTag.innerText = "No feature is clicked!";
+	}
+}
+
+function updateLegend() {
+
+legend.innerText = '';
+
+
+var theseLayers = display.getLayers();
+var legendString = "Legend";
+if (theseLayers.length > 1) {
+	for (i = 1; i < theseLayers.length; i++) {
+		//legendString += "\n - "+theseLayers[i].name;
+		
+		var el= document.createElement('div');
+		el.innerText = theseLayers[i].name;
+		el.style.color=theseLayers[i].getStyle().styleGroups.linkStyle[0].fill;
+		legend.appendChild(el);
+	}
+}
+}
+
+display.addEventListener('pointerup', eventHandler);
+		</script>
+	</body>
+</html>
