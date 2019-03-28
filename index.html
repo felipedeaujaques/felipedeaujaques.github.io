@@ -86,6 +86,7 @@
 				max-height: 380px;
 				overflow-y: scroll;
 				padding: 20px 5px;
+				opacity: .7;
 			}
 			
 			#legend {
@@ -133,10 +134,6 @@
                 name   : 'mvt-world-layer',
                 remote : {
                     url : 'https://xyz.api.here.com/tiles/osmbase/256/all/{z}/{x}/{y}.mvt?access_token='+acc
-                    // optional settings:
-                    // max  : 16,     // max level for loading data
-                    // min  : 1       // min level for loading data
-                    // tileSize : 512 // 512|256 defines mvt tilesize in case it can't be automatically detected in url..
                 },
                 min : 1,
                 max : 16,
@@ -198,12 +195,45 @@
 		display.addEventListener('pointerenter', function(evt){
 			// set feature style when pointer enters feature
 			var targetstyle = evt.detail.layer.getStyle().styleGroups.linkStyle[0];
-			//console.log(evt.detail.layer.getStyle().styleGroups.linkStyle[0].radius);
-			var hoverStyleVol = [
-				{zIndex:1, type:"Circle",radius:targetstyle.radius*3, fill: targetstyle.fill},
+			console.log(evt.target)
+
+			var hoverPoint = [
+				{zIndex:1,
+				 type: "Point",
+				 radius: targetstyle.radius*3,
+				 fill: targetstyle.fill
+				}
 			];
-			if(evt.target)
-				evt.detail.layer.setStyleGroup(evt.target, hoverStyleVol);
+
+			var hoverLine = [
+				{zIndex: 1,
+				 type: "Line",
+				 stroke: targetstyle.stroke,
+				 strokeWidth: targetstyle.strokeWidth*2
+				}
+			];
+
+			var hoverPoly = [
+				{zIndex: 1,
+				 type: "Polygon",
+				 fill: targetstyle.fill,
+				 opacity: 1.0
+				}
+			];
+
+			if(evt.target) {
+				switch(evt.target.geometry.type) {
+					case 'Point':
+						evt.detail.layer.setStyleGroup(evt.target, hoverPoint);
+						break;
+					case 'LineString':
+						evt.detail.layer.setStyleGroup(evt.target, hoverLine);
+						break;
+					case 'Polygon':
+						evt.detail.layer.setStyleGroup(evt.target, hoverPoly);
+						break;
+				}
+			}
 		});
 
 		// add event listener to pointerleave
@@ -479,7 +509,7 @@ var ports = new here.xyz.maps.layers.TileLayer({
 
 var cyclones = new here.xyz.maps.layers.TileLayer({
 	name: 'Historic Cyclone Paths',
-    min: mini,
+    min: 4,
     max: maxi,
 
     // Define provider for this layer
@@ -611,7 +641,7 @@ function eventHandler(evt){
 			}
 		}
 		// Display feature user properties
-		infoTag.innerText = JSON.stringify(properties, undefined, 4);
+		infoTag.innerText = JSON.stringify(properties, undefined, 4).replace(new RegExp('[{}]','g'),'');
 	}
 	// Feature is not clicked
 	else{
