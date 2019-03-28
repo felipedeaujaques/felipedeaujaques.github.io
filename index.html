@@ -195,11 +195,11 @@
 		display.addEventListener('pointerenter', function(evt){
 			// set feature style when pointer enters feature
 			var targetstyle = evt.detail.layer.getStyle().styleGroups.linkStyle[0];
-			console.log(evt.target)
+			console.log(evt.detail.layer.getStyle().styleGroups.linkStyle[0].type)
 
 			var hoverPoint = [
 				{zIndex:1,
-				 type: "Point",
+				 type: "Circle",
 				 radius: targetstyle.radius*3,
 				 fill: targetstyle.fill
 				}
@@ -221,10 +221,26 @@
 				}
 			];
 
+			var hoverImage = [
+				{zIndex: 0,
+				 type: 'Image',
+				 src: targetstyle.src,
+				 fill: targetstyle.fill,
+				 width: targetstyle.width+5
+				 }
+			];
+
 			if(evt.target) {
 				switch(evt.target.geometry.type) {
 					case 'Point':
-						evt.detail.layer.setStyleGroup(evt.target, hoverPoint);
+						switch(targetstyle.type) {
+							case 'Circle':
+								evt.detail.layer.setStyleGroup(evt.target, hoverPoint);
+								break;
+							case 'Image':
+								evt.detail.layer.setStyleGroup(evt.target, hoverImage);
+								break;
+						}
 						break;
 					case 'LineString':
 						evt.detail.layer.setStyleGroup(evt.target, hoverLine);
@@ -239,8 +255,9 @@
 		// add event listener to pointerleave
 		display.addEventListener('pointerleave', function(evt){
 			// restore feature style when pointer leaves feature
-			if(evt.target)
+			if(evt.target) {
 				evt.detail.layer.setStyleGroup(evt.target);
+			}
 		});
 
 //Layer Style Setter
@@ -431,7 +448,7 @@ var airports = new here.xyz.maps.layers.TileLayer({
         linkStyle: [{
           type: "Image",
           zIndex: 0,
-		  width: 10,
+		  width: 12,
 		  fill: "#fffff",
           src: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAcCAYAAAByDd+UAAAABmJLR0QA/wD/AP+gvaeTAAABqUlEQVRIie2UvStGYRjGr+d9X19ZMKFkMJmEUEwGH2UxS8rsH5AS/4EyKpMwkYGUsimLFDEYDEoJYSBfb/wsJx6P8/G+x3lNrjrD89z3uX73fXfuI/0rpoAiYBw4ADYKDasBdvnSSSFhjcAZ3zVVKFgXcOPAjoCyQsAGgUcHdgU02HkZ56UmSfOSaiVVSLIre5b0ZJ0fJGWtc72ktBMfMMacBlU4ADyQjF6Bfj9O2oMZSW2SkFQtqTxgcrkISaPGmFW/oPHpNCWpWVKPpF5JXZKK8wCeG2PqYhT6WUAGaAWmgT3gLWKcF7FhAQV0AM8hwOskYZXAcUSHd0nBMsCmz9fo6j4JmAGWHeN9oBl4d+6foh2jgROO6Q5Q5cXcEWej/GzjUmAWWADGgBZgxOliFevfCMz4jPXHuoVBizxTP027ZkDfr4CeSQmw4ZhMBuSW83NNUnkBrU5XLJPukNytXIGBAWNMVtKQpHXvqj2kvm2b7z3xBKSBJWAtJKfJ6u42NswyLAbmQuIp4NIDHv4aaEHTIfFF4AXoTASYQ0EjwPCfwDxgfrv3V/oA2G3jN0eGPewAAAAASUVORK5CYII="}]
 	  },
