@@ -121,10 +121,6 @@
 
 		<script type="application/javascript">
 
-var hoverStyleVol = [
-	{zIndex:1, type:"Circle",radius:5, opacity:1.0,fill:setVolColor},
-];
-
 			//specify your credentials for image and link layers
 			var infoTag = document.querySelector("#info");
 			var acc = 'AbynnjJw1kaHrFGPTZqce1k';
@@ -196,18 +192,25 @@ var hoverStyleVol = [
 		},
 		layers: layers});
 
+		layers[0].pointerEvents(false);
+
 		// add event listener to pointerenter
 		display.addEventListener('pointerenter', function(evt){
 			// set feature style when pointer enters feature
+			var targetstyle = evt.detail.layer.getStyle().styleGroups.linkStyle[0];
+			//console.log(evt.detail.layer.getStyle().styleGroups.linkStyle[0].radius);
+			var hoverStyleVol = [
+				{zIndex:1, type:"Circle",radius:targetstyle.radius*3, fill: targetstyle.fill},
+			];
 			if(evt.target)
-				volcanoes.setStyleGroup(evt.target, hoverStyleVol);
+				evt.detail.layer.setStyleGroup(evt.target, hoverStyleVol);
 		});
 
 		// add event listener to pointerleave
 		display.addEventListener('pointerleave', function(evt){
 			// restore feature style when pointer leaves feature
 			if(evt.target)
-				volcanoes.setStyleGroup(evt.target);
+				evt.detail.layer.setStyleGroup(evt.target);
 		});
 
 //Layer Style Setter
