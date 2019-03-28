@@ -30,7 +30,7 @@
 				top: 0;
 				padding: 8px;
 				border-radius: 9px;
-				width: 170px;
+				width: 200px;
 				text-align: center;
 				font-weight: bold;
 				font-family: sans-serif;
@@ -56,6 +56,11 @@
 			}
 			#floods {
 				background-color: rgba(0, 68, 247, .6);
+				color: #fff;				
+				border: 1px solid #fff;
+			}
+			#storms {
+				background-color: rgba(105, 105, 105, .6);
 				color: #fff;				
 				border: 1px solid #fff;
 			}
@@ -107,6 +112,7 @@
 				<div id="logistics" class="button">Logistics mode</div>
 				<div id="earthquake" class="button">Earthquake mode</div>
 				<div id="floods" class="button">Flood mode</div>
+				<div id="storms" class="button">Storm mode</div>
 			</div>
 			
 			<div id="info" class="properties">No feature is clicked!</div>
@@ -114,23 +120,30 @@
 		<div id="legend" class="">Legend</div>
 
 		<script type="application/javascript">
+
+var hoverStyleVol = [
+	{zIndex:1, type:"Circle",radius:5, opacity:1.0,fill:setVolColor},
+];
+
 			//specify your credentials for image and link layers
-	      	var YOUR_ACCESS_TOKEN = window.parent.YOUR_ACCESS_TOKEN;
 			var infoTag = document.querySelector("#info");
-			
+			var acc = 'AbynnjJw1kaHrFGPTZqce1k';
+			var mini = 0;
+			var maxi = 25;
+
         // add layers to display
         var layers = [
             new here.xyz.maps.layers.MVTLayer({
                 name   : 'mvt-world-layer',
                 remote : {
-                    url : 'https://xyz.api.here.com/tiles/osmbase/256/all/{z}/{x}/{y}.mvt'
+                    url : 'https://xyz.api.here.com/tiles/osmbase/256/all/{z}/{x}/{y}.mvt?access_token='+acc
                     // optional settings:
                     // max  : 16,     // max level for loading data
                     // min  : 1       // min level for loading data
                     // tileSize : 512 // 512|256 defines mvt tilesize in case it can't be automatically detected in url..
                 },
                 min : 1,
-                max : 20,
+                max : 16,
 
                 style : {
 
@@ -142,12 +155,12 @@
 
                     styleGroups: {
 
-                        'earth'        : [{ zIndex: 1, type: 'Polygon', fill: '#555555' }],
-                        'water'        : [{ zIndex: 2, type: 'Polygon',opacity:0.3, fill: '#7ffcfc' }],
-                        'landuse'      : [{ zIndex: 3, type: 'Polygon', fill: '#666666' }],
-                        'roads'        : [{ zIndex: 4, type: 'Line',  stroke: '#ffffff', strokeWidth: 4 }],
-                        'roadshighway' : [{ zIndex: 5, type: 'Line',  stroke: '#ffffff', strokeWidth: 6 }],
-                        'buildings'    : [{ zIndex: 7, type: 'Polygon', fill: '#999999' }]
+                        'earth'        : [{ zIndex: 0, type: 'Polygon', fill: '#555555' }],
+                        'water'        : [{ zIndex: 0, type: 'Polygon',opacity:0.3, fill: '#7ffcfc' }],
+                        'landuse'      : [{ zIndex: 0, type: 'Polygon', fill: '#666666' }],
+                        'roads'        : [{ zIndex: 0, type: 'Line',  stroke: '#ffffff', strokeWidth: 4 }],
+                        'roadshighway' : [{ zIndex: 0, type: 'Line',  stroke: '#ffffff', strokeWidth: 6 }],
+                        'buildings'    : [{ zIndex: 0, type: 'Polygon', fill: '#999999' }]
                     },
 
                     assign: function (feature, level)
@@ -175,12 +188,28 @@
                 }
             })
         ];
+
 		window.display = new  here.xyz.maps.Map( document.getElementById("map"), {
-        zoomLevel : 4,
+        zoomLevel : 2,
         center: {
             longitude: -96.76883, latitude: 39.6104
 		},
 		layers: layers});
+
+		// add event listener to pointerenter
+		display.addEventListener('pointerenter', function(evt){
+			// set feature style when pointer enters feature
+			if(evt.target)
+				volcanoes.setStyleGroup(evt.target, hoverStyleVol);
+		});
+
+		// add event listener to pointerleave
+		display.addEventListener('pointerleave', function(evt){
+			// restore feature style when pointer leaves feature
+			if(evt.target)
+				volcanoes.setStyleGroup(evt.target);
+		});
+
 //Layer Style Setter
 function setEarthquakeRadius(feature, zoomlevel) {
 	return Math.floor(feature.properties.mag)*2;
@@ -198,8 +227,8 @@ function setVolColor(feature, zoomlevel) { //set color of volcanoe
 //Layer Definition
 var floodRiskAreas = new here.xyz.maps.layers.TileLayer({
 	name: 'Flood Risk Areas',
-    min: 4,
-    max: 20,
+    min: mini,
+    max: maxi,
 
     // Define provider for this layer
     provider: new here.xyz.maps.providers.SpaceProvider ({
@@ -210,11 +239,11 @@ var floodRiskAreas = new here.xyz.maps.layers.TileLayer({
 		level: 4,
 
 		// Space name
-		space: '6wgAHK01',
+		space: 'jOVvBmeh',
 
 		// User credential of the provider
 		credentials: {
-            access_token: 'SmWO0Bq3sCxLjBrQ_l8aGQ'
+            access_token: acc
 		}
 			}),
 
@@ -235,13 +264,9 @@ var floodRiskAreas = new here.xyz.maps.layers.TileLayer({
 
 var earthquakes = new here.xyz.maps.layers.TileLayer({
 	// Name of the layer
-	name: 'Significant Earthquakes Last 7 Days',
-
-	// Minimum zoom level
-    min: 4,
-
-    // Maximum zoom level
-    max: 20,
+	name: 'Significant Earthquakes Last Month',
+    min: maxi,
+    max: mini,
 
     // Define provider for this layer
     provider: new here.xyz.maps.providers.SpaceProvider ({
@@ -252,11 +277,11 @@ var earthquakes = new here.xyz.maps.layers.TileLayer({
 		level: 4,
 
 		// Space name
-		space: 'AZNDhUcf',
+		space: 'hvRHTYsy',
 
 		// User credential of the provider
 		credentials: {
-            access_token: 'SmWO0Bq3sCxLjBrQ_l8aGQ'
+            access_token: acc
 		}
 			}),
 
@@ -279,8 +304,8 @@ var earthquakes = new here.xyz.maps.layers.TileLayer({
 var volcanoes = new here.xyz.maps.layers.TileLayer({
 	// Name of the layer
 	name: 'Global Volcanoes',
-    min: 4,
-    max: 20,
+    min: mini,
+    max: maxi,
     provider: new here.xyz.maps.providers.SpaceProvider ({
     	// Name of the provider
 		name:  'SpaceProvider',
@@ -289,11 +314,11 @@ var volcanoes = new here.xyz.maps.layers.TileLayer({
 		level: 4,
 
 		// Space name
-		space: 'Tl09MpZ6',
+		space: 'UuVkYCwS',
 
 		// User credential of the provider
 		credentials: {
-            access_token: 'SmWO0Bq3sCxLjBrQ_l8aGQ'
+            access_token: acc
 		}
 			}),
 
@@ -314,8 +339,8 @@ var volcanoes = new here.xyz.maps.layers.TileLayer({
 
 var dams = new here.xyz.maps.layers.TileLayer({
 	name: 'Dams and Water Reservoirs',
-    min: 4,
-    max: 20,
+    min: mini,
+    max: 10,
 
     // Define provider for this layer
     provider: new here.xyz.maps.providers.SpaceProvider ({
@@ -326,11 +351,11 @@ var dams = new here.xyz.maps.layers.TileLayer({
 		level: 4,
 
 		// Space name
-		space: 'zv4IZzoR',
+		space: 'Wl49aIk5',
 
 		// User credential of the provider
 		credentials: {
-            access_token: 'SmWO0Bq3sCxLjBrQ_l8aGQ'
+            access_token: acc
 		}
 			}),
 
@@ -353,8 +378,8 @@ var dams = new here.xyz.maps.layers.TileLayer({
 //logistics
 var airports = new here.xyz.maps.layers.TileLayer({
 	name: 'Global Airports',
-    min: 6,
-    max: 20,
+    min: mini,
+    max: maxi,
     provider: new here.xyz.maps.providers.SpaceProvider ({
     	// Name of the provider
 		name:  'SpaceProvider',
@@ -363,9 +388,9 @@ var airports = new here.xyz.maps.layers.TileLayer({
 		level: 4,
 
 		// Space name
-		space: 'Q2oST25X',
+		space: 'xDBZAPBf',
 		credentials: {
-            access_token: 'SmWO0Bq3sCxLjBrQ_l8aGQ'
+            access_token: acc
 		}
 			}),
 	style:{
@@ -383,16 +408,16 @@ var airports = new here.xyz.maps.layers.TileLayer({
 
 var hospitals = new here.xyz.maps.layers.TileLayer({
 	name: 'Global Medical Support',
-    min: 6,
-    max: 20,
+    min: mini,
+    max: 10,
     provider: new here.xyz.maps.providers.SpaceProvider ({
 		name:  'SpaceProvider',
-		level: 4,
-		space: 'ZdeMnl52',
+		level: 6,
+		space: '3IiQm9PL',
 
 		// User credential of the provider
 		credentials: {
-            access_token: 'SmWO0Bq3sCxLjBrQ_l8aGQ'
+            access_token: acc
 		}
 			}),
 
@@ -418,19 +443,19 @@ var hospitals = new here.xyz.maps.layers.TileLayer({
 
 var ports = new here.xyz.maps.layers.TileLayer({
 	name: 'Global Ports',
-    min: 4,
-    max: 20,
+    min: mini,
+    max: maxi,
 
     // Define provider for this layer
     provider: new here.xyz.maps.providers.SpaceProvider ({
     	// Name of the provider
 		name:  'SpaceProvider',
-		level: 4,
-		space: 'VxSo4ZZY',
+		level: 6,
+		space: 'oJOniQdl',
 
 		// User credential of the provider
 		credentials: {
-            access_token: 'SmWO0Bq3sCxLjBrQ_l8aGQ'
+            access_token: acc
 		}
 			}),
 
@@ -438,8 +463,39 @@ var ports = new here.xyz.maps.layers.TileLayer({
     style:{
     	styleGroups: {
     		linkStyle: [
-				{zIndex:2, type:"Circle",radius:3, opacity:1.0, fill:"#00fffb"},
+				{zIndex:2, type:"Circle",radius:3, opacity:1.0, fill:"#00008B"},
 				]
+    	},
+
+		assign: function(feature, zoomlevel){
+         	return "linkStyle";
+		}
+    }
+
+})
+
+var cyclones = new here.xyz.maps.layers.TileLayer({
+	name: 'Historic Cyclone Paths',
+    min: mini,
+    max: maxi,
+
+    // Define provider for this layer
+    provider: new here.xyz.maps.providers.SpaceProvider ({
+    	// Name of the provider
+		name:  'SpaceProvider',
+		level: 6,
+		space: 'CNrmfmb8',
+
+		// User credential of the provider
+		credentials: {
+            access_token: acc
+		}
+			}),
+
+    // customize layer style
+    style:{
+    	styleGroups: {
+    		linkStyle: [{ zIndex: 2, type: 'Line', fill:"#00fffb" , stroke: '#97ffff', strokeWidth: 6 }]
     	},
 
 		assign: function(feature, zoomlevel){
@@ -517,6 +573,26 @@ document.querySelector("#floods").onclick = function(){
 	}
 };
 
+//Flood Mode on off
+var stormAdded = false;
+document.querySelector("#storms").onclick = function(){
+
+	if(!stormAdded){
+		display.addLayer(cyclones);
+
+		this.innerText="End storm mode";
+		updateLegend();
+		stormAdded = true;
+	}
+	else{
+		display.removeLayer(cyclones);
+
+		this.innerText="Storm mode";
+		updateLegend();
+		stormAdded = false;
+	}
+};
+
 // Add a event listener to pointerup
 function eventHandler(evt){
 	// Click on a feature
@@ -526,7 +602,11 @@ function eventHandler(evt){
 		var bbox = evt.target.bbox;
 		display.setCenter((bbox[0]+bbox[2])/2, (bbox[1]+bbox[3])/2);
 		
-		
+		for (prop in properties){
+			if (properties[prop] == null) {
+				delete properties[prop];
+			}
+		}
 		// Display feature user properties
 		infoTag.innerText = JSON.stringify(properties, undefined, 4);
 	}
@@ -539,14 +619,10 @@ function eventHandler(evt){
 function updateLegend() {
 
 legend.innerText = '';
-
-
 var theseLayers = display.getLayers();
 var legendString = "Legend";
-if (theseLayers.length > 1) {
-	for (i = 1; i < theseLayers.length; i++) {
-		//legendString += "\n - "+theseLayers[i].name;
-		
+if (theseLayers.length >= 1) {
+	for (i = 1; i < theseLayers.length; i++) {		
 		var el= document.createElement('div');
 		el.innerText = theseLayers[i].name;
 		el.style.color=theseLayers[i].getStyle().styleGroups.linkStyle[0].fill;
