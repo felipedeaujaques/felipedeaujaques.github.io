@@ -649,9 +649,6 @@ function eventHandler(evt){
 	if(evt.target){
 		var properties = evt.target.properties;
 		
-		var bbox = evt.target.bbox;
-		display.setCenter((bbox[0]+bbox[2])/2, (bbox[1]+bbox[3])/2);
-		
 		for (prop in properties){
 			if (properties[prop] == null) {
 				delete properties[prop];
