@@ -1,0 +1,8 @@
+[submodule "EdenHazards"]
+	path = EdenHazards
+	url = https://github.com/felipedeaujaques/EdenHazards.git
+	branch = master
+[submodule "planUav"]
+	path = planUav
+	url = https://github.com/felipedeaujaques/planUav.git
+	branch = master
