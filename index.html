@@ -3,26 +3,85 @@
  <html>
 	<head>
 	<style>
-		#eden {
-			width: 5%
+		body {
+  			font-family: Arial;
+  			color: black;
 		}
-		#uav {
-			width: 5%
+
+		.split {
+			height: 100%;
+			width: 50%;
+			position: fixed;
+			z-index: 1;
+			top: 0;
+			overflow-x: hidden;
+			padding-top: 20px;
 		}
-		#eden:hover {
-			width: 10%
+
+		.left {
+			left: 0;
+			background-color:teal;
 		}
-		#uav:hover {
-			width: 10%
+
+		.right {
+			right: 0;
+			background-color:white;
+		}
+
+		.centered {
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			text-align: center;
+		}
+
+		.centered img {
+			width: 200px;
+			border-radius: 100%;
+		}
+
+		.centered img:hover {
+			width: 230px;
+		}
+
+		.centered .tooltiptext {
+			visibility: hidden;
+			width: 120px;
+			background-color: black;
+			color: #fff;
+			text-align: center;
+			border-radius: 6px;
+			padding: 5px 0;
+
+			/* Position the tooltip */
+			position: absolute;
+			z-index: 1;
+		}
+
+		.centered:hover .tooltiptext {
+  			visibility: visible;
 		}
 	</style>
 		<title>Felipedeaujaques Projects</title>
-
-		<a href="https://felipedeaujaques.github.io/EdenHazards/index.html">
-			<img src="Tornado.png" id=eden alt="EdenHazards">
-		</a>
-		<a href="https://felipedeaujaques.github.io/planUav/index.html">
-			<img src="drone.png" id=uav alt="planUav">
-		</a>
-	</body>
+</head>
+<body>
+		<div class="split left">
+			<div class="centered">
+				<a href="https://felipedeaujaques.github.io/planUav/index.html">
+					<img src="drone.png" alt="planUav Example">
+					<div class=tooltiptext>planUav</div>
+				</a>
+			</div>
+		</div>
+			  
+		<div class="split right">
+			<div class="centered">
+				<a href="https://felipedeaujaques.github.io/EdenHazards/index.html">
+					<img src="Tornado.png" alt="EdenHazards Example">
+					<div class=tooltiptext>EdenHazards</div>
+				</a>
+			</div>
+		</div>
+</body>
 </html>
