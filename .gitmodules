@@ -6,3 +6,6 @@
 	path = planUav
 	url = https://github.com/felipedeaujaques/planUav.git
 	branch = master
+[submodule "30daysmapchallenge"]
+	path = 30daysmapchallenge
+	url = https://github.com/felipedeaujaques/30daysmapchallenge.git
